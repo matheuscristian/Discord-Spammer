@@ -1,0 +1,101 @@
+#!/bin/python3
+
+from os.path import exists
+from configparser import ConfigParser
+from requests import post
+from random import randint
+from time import sleep
+
+# This helps printing with colors
+class Printer():
+    _colors_ = {
+        **dict.fromkeys(("RED", "ERROR", "NO"), "\033[1;31m"),
+        **dict.fromkeys(("GREEN", "OK", "YES"), "\033[0;32m"),
+        **dict.fromkeys(("YELLOW", "WARN", "MAYBE"), "\033[0;93m"),
+        "BLUE": "\033[1;34m",
+        "CYAN": "\033[1;36m",
+        "RESET": "\033[0;0m",
+        "BOLD": "\033[;1m",
+        "REVERSE": "\033[;7m"
+    }
+
+    def _get_color_(self, key):
+        try:
+            return self._colors_[key.upper()]
+        except:
+            return self._colors_["RESET"]
+
+    def print(self, msg, color="RESET"):
+        # Get ANSI color code.
+        color = self._get_color_(key=color)
+
+        # Printing...
+        print("{}{}{}".format(color, msg, self._colors_["RESET"]))
+
+# This helps with the menu displaying
+class Menu:
+    def __init__(self):
+        self.printer = Printer()
+    def title(self):
+        self.printer.print(" ######   ######       #######                                 ", "CYAN")
+        self.printer.print(" #     #  #     #         #      ####    ####   #        ####  ", "CYAN")
+        self.printer.print(" #     #  #     #         #     #    #  #    #  #       #      ", "CYAN")
+        self.printer.print(" #     #  ######          #     #    #  #    #  #        ####  ", "CYAN")
+        self.printer.print(" #     #  #               #     #    #  #    #  #            # ", "CYAN")
+        self.printer.print(" #     #  #               #     #    #  #    #  #            # ", "CYAN")
+        self.printer.print(" ######   #               #      ####    ####   ######   ####  ", "CYAN")
+        self.printer.print("---------------------------------------------------------------", "RED")
+    def menu(self, t):
+        self.title()        
+        if (t == 0):
+            return input("Enter the channel ID: ")
+        else:
+            raise IndexError("The program is trying to access an invalid menu.")
+
+def main():
+    config = ConfigParser()
+    # Create file with default options if it doesn't exists
+    if not exists("config.ini"):
+        config["General"] = {
+            "Token": "None",
+            "Delay": 1.0
+        }
+        with open("config.ini", "w") as config_file:
+            config.write(config_file)
+    # If the file exists, read and parse it
+    else:
+        config.read_file(open("config.ini", "r"))
+
+    # If message file doesn't exists create it with a default message
+    if not exists("message.txt"):
+        with open("message.txt", "w") as message_file:
+            message_file.write("Test message")
+
+    # Read the message file
+    message = ''
+    with open("message.txt", "r") as message_file:
+        message = ' '.join(message_file.readlines())
+    
+    # Start menu and prompt user
+    menu = Menu()
+    channel_id = menu.menu(0)
+    
+    # Loop that keeps sending the message
+    while True:
+        post(f"https://discord.com/api/v9/channels/{channel_id}/messages", 
+            headers={
+                "Authorization": config["General"]["Token"]
+            },
+            json={
+                "content": message,
+                "nonce": ''.join([str(randint(0, 9)) for _ in range(18)]),
+                "tts": "false"
+            })
+        sleep(float(config["General"]["Delay"]))
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print()
+        exit(0)

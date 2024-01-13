@@ -31,7 +31,7 @@ def main():
     # Read the message file
     message = ''
     with open("message.txt", "r") as message_file:
-        message = '\n'.join(message_file.readlines())
+        message = '\n'.join(message_file.readlines())[:2000]
     
     channel_id = input("Enter channel id: ")
     
@@ -42,7 +42,7 @@ def main():
 
     # Loop that keeps sending the message
     while True:
-        post(f"https://discord.com/api/v9/channels/{channel_id}/messages", 
+        res = post(f"https://discord.com/api/v9/channels/{channel_id}/messages", 
             headers={
                 "Authorization": config["General"]["Token"]
             },
@@ -51,6 +51,11 @@ def main():
                 "nonce": ''.join([str(randint(0, 9)) for _ in range(18)]),
                 "tts": "false"
             })
+        # print(res.status_code)
+        if res.status_code == 200:
+            print("Message sent")
+        else:
+            print("Message wasn't sent")
         sleep(delay)
 
 if __name__ == "__main__":
